@@ -215,3 +215,5 @@ The final deliverable will be a working, benchmarked streaming gateway supported
 **Category:** Backend Engineering / Distributed Systems Fundamentals  
 **Primary Focus:** High-Concurrency Asynchronous Streaming  
 **Target:** 10,000+ Concurrent Connections
+
+ASGI is the communication standard, Uvicorn is the server implementation, and FastAPI is our application framework. 
