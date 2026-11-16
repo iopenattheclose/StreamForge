@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID
-
+import asyncio
 
 class GenerationStatus(str, Enum):
     CREATED = "created"
@@ -26,3 +26,8 @@ class Generation:
 
     token_count: int = 0
     error: str | None = None
+
+@dataclass
+class GenerationRuntime:
+    token_queue: asyncio.Queue[str]
+    producer_task: asyncio.Task | None = None

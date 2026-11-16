@@ -966,3 +966,5 @@ Redis, Kafka, PostgreSQL persistence, Prometheus and distributed inference are o
 **End of StreamForge learning notes.**
 
 The final README will remain a separate document and will be updated after implementation, testing and real benchmarking.
+
+One important principle: Async doesn't mean Python executes multiple pieces of code simultaneously. It means the event loop can switch between tasks whenever one is waiting.
