@@ -29,31 +29,31 @@ class GenerationManager:
         self._queue_max_size = queue_max_size
         self._max_active_generations = max_active_generations
 
-
     def _active_generation_count(self) -> int:
         return sum(
             1
             for generation in self._generations.values()
-            if generation.status in (
+            if generation.status
+            in (
                 GenerationStatus.CREATED,
                 GenerationStatus.RUNNING,
             )
-    )
+        )
 
     def remove_runtime(self, generation_id: UUID) -> None:
         self._runtimes.pop(generation_id, None)
 
-    def create_generation(self) -> Generation:
+    def create_generation(self, prompt: str, max_tokens: int) -> Generation:
 
         if self._active_generation_count() >= self._max_active_generations:
-            raise GenerationCapacityError(
-                "Maximum active generation capacity reached"
-            )
-        
+            raise GenerationCapacityError("Maximum active generation capacity reached")
+
         generation_id = uuid4()
 
         generation = Generation(
-            generation_id=generation_id
+            generation_id=generation_id,
+            prompt=prompt,
+            max_tokens=max_tokens,
         )
 
         runtime = GenerationRuntime(
@@ -73,29 +73,24 @@ class GenerationManager:
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status != GenerationStatus.CREATED:
             raise InvalidGenerationStateError(
                 f"Cannot start generation in {generation.status.value} state"
-        )
+            )
 
         generation.status = GenerationStatus.RUNNING
         generation.started_at = datetime.now(timezone.utc)
 
         return generation
 
-
     def complete_generation(self, generation_id: UUID) -> Generation:
 
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status != GenerationStatus.RUNNING:
             raise InvalidGenerationStateError(
@@ -107,15 +102,12 @@ class GenerationManager:
 
         return generation
 
-
     def fail_generation(self, generation_id: UUID, error: str) -> Generation:
 
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status != GenerationStatus.RUNNING:
             raise InvalidGenerationStateError(
@@ -132,9 +124,7 @@ class GenerationManager:
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status == GenerationStatus.CANCELLED:
             return generation
@@ -152,14 +142,11 @@ class GenerationManager:
 
         return generation
 
-
     def expire_generation(self, generation_id: UUID) -> Generation:
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status != GenerationStatus.CREATED:
             raise InvalidGenerationStateError(
@@ -175,20 +162,18 @@ class GenerationManager:
         return self._runtimes.get(generation_id)
 
     def start_producer(
-    self,
-    generation_id: UUID,
-    producer: SyntheticProducer,
-    prompt: str,
+        self,
+        generation_id: UUID,
+        producer: SyntheticProducer,
+        prompt: str,
     ) -> None:
-        
+
         runtime = self.get_runtime(generation_id)
 
         generation = self.get_generation(generation_id)
 
         if generation is None:
-            raise GenerationNotFoundError(
-                f"Generation {generation_id} not found"
-            )
+            raise GenerationNotFoundError(f"Generation {generation_id} not found")
 
         if generation.status != GenerationStatus.RUNNING:
             raise InvalidGenerationStateError(

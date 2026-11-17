@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.generations.manager import GenerationManager
+from app.api.routes import router
 
 
 @asynccontextmanager
@@ -25,6 +26,8 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+app.include_router(router)
 
 
 @app.get("/health")

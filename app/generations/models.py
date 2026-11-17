@@ -18,7 +18,10 @@ class QueueSignal(str, Enum):
 @dataclass
 class Generation:
     generation_id: UUID
+    prompt: str
+    max_tokens: int
     status: GenerationStatus = GenerationStatus.CREATED
+
 
     created_at: datetime = field(
         default_factory=lambda: datetime.now(timezone.utc)
