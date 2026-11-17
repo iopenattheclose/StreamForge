@@ -12,6 +12,9 @@ class GenerationStatus(str, Enum):
     FAILED = "failed"
     EXPIRED = "expired"
 
+class QueueSignal(str, Enum):
+    FINISHED = "finished"
+
 @dataclass
 class Generation:
     generation_id: UUID
@@ -29,5 +32,5 @@ class Generation:
 
 @dataclass
 class GenerationRuntime:
-    token_queue: asyncio.Queue[str]
+    token_queue: asyncio.Queue[str | QueueSignal]
     producer_task: asyncio.Task | None = None

@@ -6,6 +6,7 @@ from app.generations.models import (
     GenerationStatus,
 )
 import asyncio
+from app.producers.synthetic import SyntheticProducer
 
 
 class GenerationNotFoundError(Exception):
@@ -172,6 +173,39 @@ class GenerationManager:
 
     def get_runtime(self, generation_id: UUID) -> GenerationRuntime | None:
         return self._runtimes.get(generation_id)
+
+    def start_producer(
+    self,
+    generation_id: UUID,
+    producer: SyntheticProducer,
+    prompt: str,
+    ) -> None:
+        
+        runtime = self.get_runtime(generation_id)
+
+        generation = self.get_generation(generation_id)
+
+        if generation is None:
+            raise GenerationNotFoundError(
+                f"Generation {generation_id} not found"
+            )
+
+        if generation.status != GenerationStatus.RUNNING:
+            raise InvalidGenerationStateError(
+                "Producer can only start for a running generation"
+            )
+
+        if runtime is None:
+            raise GenerationNotFoundError(
+                f"Runtime for generation {generation_id} not found"
+            )
+
+        runtime.producer_task = asyncio.create_task(
+            producer.generate(
+                prompt=prompt,
+                token_queue=runtime.token_queue,
+            )
+        )
 
 
 class GenerationCapacityError(Exception):
