@@ -6,13 +6,19 @@ from fastapi import FastAPI
 from app.config import settings
 from app.generations.manager import GenerationManager
 from app.api.routes import router
+from app.producers.synthetic import SyntheticProducer
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
     app.state.generation_manager = GenerationManager(
         queue_max_size=settings.queue_max_size,
         max_active_generations=settings.max_active_generations,
+    )
+
+    app.state.producer = SyntheticProducer(
+    token_delay=settings.token_delay
     )
 
     yield
