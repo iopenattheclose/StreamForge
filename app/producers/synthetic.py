@@ -6,14 +6,25 @@ class SyntheticProducer:
         self._token_delay = token_delay
 
     async def generate(
-    self,
-    prompt: str,
-    token_queue: asyncio.Queue[str | QueueSignal],
-):
-        tokens = prompt.split()
+        self,
+        prompt: str,
+        max_tokens: int,
+        token_queue: asyncio.Queue[str | QueueSignal],
+        on_token,
+    ):
+        try:
+            tokens = prompt.split()[:max_tokens]
 
-        for token in tokens:
-            await token_queue.put(token)
-            await asyncio.sleep(self._token_delay)
+            for token in tokens:
+                await token_queue.put(token)
+                on_token()
+                await asyncio.sleep(self._token_delay)
 
-        await token_queue.put(QueueSignal.FINISHED)
+            await token_queue.put(QueueSignal.FINISHED)
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception:
+            await token_queue.put(QueueSignal.ERROR)
+            raise

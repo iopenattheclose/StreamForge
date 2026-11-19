@@ -14,7 +14,8 @@ class GenerationStatus(str, Enum):
 
 class QueueSignal(str, Enum):
     FINISHED = "finished"
-
+    ERROR = "error"
+    
 @dataclass
 class Generation:
     generation_id: UUID

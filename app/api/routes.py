@@ -9,6 +9,7 @@ from app.api.schemas import (
     GenerationCreateData,
     GenerationCreateRequest,
     GenerationCreateResponse,
+    GenerationStatusResponse,
 )
 
 router = APIRouter(prefix="/api/v1")
@@ -67,6 +68,7 @@ async def stream_generation(
         generation_id=generation_id,
         producer=producer,
         prompt=generation.prompt,
+        max_tokens=generation.max_tokens,
     )
 
     async def stream():
@@ -74,19 +76,30 @@ async def stream_generation(
             async for chunk in consume_tokens(runtime.token_queue):
                 yield chunk
 
+            await runtime.producer_task
             manager.complete_generation(generation_id)
 
         except asyncio.CancelledError:
             manager.cancel_generation(generation_id)
             raise
 
+        except Exception as exc:
+            manager.fail_generation(
+                generation_id,
+                error=str(exc),
+            )
+            raise
+
         finally:
-            if runtime.producer_task and not runtime.producer_task.done():
-                runtime.producer_task.cancel()
+            if runtime.producer_task:
+                if not runtime.producer_task.done():
+                    runtime.producer_task.cancel()
 
                 try:
                     await runtime.producer_task
                 except asyncio.CancelledError:
+                    pass
+                except Exception:
                     pass
 
             manager.remove_runtime(generation_id)
@@ -95,4 +108,32 @@ async def stream_generation(
     return StreamingResponse(
         stream(),
         media_type="text/event-stream",
+    )
+
+@router.get(
+    "/generations/{generation_id}",
+    response_model=GenerationStatusResponse,
+)
+async def get_generation_status(
+    generation_id: UUID,
+    request: Request,
+):
+    manager = request.app.state.generation_manager
+
+    generation = manager.get_generation(generation_id)
+
+    if generation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Generation not found",
+        )
+
+    return GenerationStatusResponse(
+        generation_id=generation.generation_id,
+        status=generation.status.value,
+        token_count=generation.token_count,
+        created_at=generation.created_at,
+        started_at=generation.started_at,
+        completed_at=generation.completed_at,
+        error=generation.error,
     )

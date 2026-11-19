@@ -5,7 +5,6 @@ from fastapi.responses import StreamingResponse
 from app.generations.models import QueueSignal
 from app.generations.models import GenerationStatus
 from fastapi.responses import StreamingResponse
-from app.streaming.sse import consume_tokens
 
 
 def format_sse(token: str) -> str:
@@ -19,6 +18,9 @@ async def consume_tokens(token_queue: asyncio.Queue):
         try:
             if item == QueueSignal.FINISHED:
                 break
+
+            if item == QueueSignal.ERROR:
+                raise RuntimeError("Token generation failed")
 
             yield format_sse(item)
 

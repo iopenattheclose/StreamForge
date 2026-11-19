@@ -166,6 +166,7 @@ class GenerationManager:
         generation_id: UUID,
         producer: SyntheticProducer,
         prompt: str,
+        max_tokens: int,
     ) -> None:
 
         runtime = self.get_runtime(generation_id)
@@ -189,8 +190,21 @@ class GenerationManager:
             producer.generate(
                 prompt=prompt,
                 token_queue=runtime.token_queue,
+                on_token=lambda: self.increment_token_count(generation_id),
+                max_tokens=max_tokens,
             )
         )
+
+
+    def increment_token_count(self, generation_id: UUID) -> None:
+        generation = self.get_generation(generation_id)
+
+        if generation is None:
+            raise GenerationNotFoundError(
+                "Generation not found"
+            )
+
+        generation.token_count += 1
 
 
 class GenerationCapacityError(Exception):
